@@ -298,4 +298,4 @@ En la primera ejecución, crear el entorno virtual e instalar las dependencias s
 2) desde alli ejecutar los siguientes comandos y volver a ejecutar el front
    .\.venv\Scripts\python.exe .\semilla.py .\base.db
    $env:MODO_DEMO = "1"
-   .\.venv\Scripts\python.exe -m flask --app app run --debug
+.\.venv\Scripts\python.exe -m flask --app app run --debug

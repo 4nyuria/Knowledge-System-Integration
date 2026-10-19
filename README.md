@@ -53,7 +53,8 @@ Set-Location "$env:USERPROFILE\Downloads\Knowledge-System-Integration-remoto\fro
 npm ci
 npm run dev
 ```
-
+Si sale error en la powershell se debe colocar npm.cmd. en lugar de npm solo
+```
 Abrir la URL local que indique Vite en la terminal, normalmente `http://localhost:5173`.
 
 Las peticiones que comienzan con `/api` se redirigen al backend local en el puerto 5000 mediante la configuracion de Vite.

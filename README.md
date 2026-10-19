@@ -296,6 +296,8 @@ En la primera ejecución, crear el entorno virtual e instalar las dependencias s
 # EN CASO DE QUE SE SIGA TOMANDO EN CUENTA EL USUARIO REALIZAR LO SIGUIENTE:
 1) cancela el flask por ahora y desde la ubicacion del back abrir nuevamente una powershell
 2) desde alli ejecutar los siguientes comandos y volver a ejecutar el front
+   ```powershell
    .\.venv\Scripts\python.exe .\semilla.py .\base.db
    $env:MODO_DEMO = "1"
 .\.venv\Scripts\python.exe -m flask --app app run --debug
+```

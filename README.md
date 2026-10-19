@@ -23,7 +23,7 @@ Aplicacion web que integra un frontend desarrollado con React y TypeScript con u
 
 ### 1. Backend
 
-Desde la raiz del repositorio, abrir una terminal de PowerShell y ejecutar:
+Desde la raiz del repositorio, en la carpeta donde este el backe, abrir una terminal de PowerShell y ejecutar:
 
 ```powershell
 Set-Location .\backend
@@ -46,10 +46,10 @@ Si PowerShell bloquea la activacion del entorno virtual, se puede instalar y eje
 
 ### 2. Frontend
 
-Mantener el backend ejecutandose y abrir otra terminal:
+Mantener el backend ejecutandose y abrir otra terminal (esta vez desde la carpeta del front):
 
 ```powershell
-Set-Location "$env:USERPROFILE\Downloads\Knowledge-System-Integration-remoto\frontend"
+por ejemplo: Set-Location "$env:USERPROFILE\Downloads\Knowledge-System-Integration-remoto\frontend"
 npm ci
 npm run dev
 ```

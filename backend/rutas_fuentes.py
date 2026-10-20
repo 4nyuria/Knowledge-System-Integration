@@ -15,6 +15,7 @@ import sqlite3
 
 from historial import registrar
 from nodos import _tipo_id
+from relaciones import generar_relaciones_automaticas
 bp = Blueprint("fuentes", __name__)
 # El filtro de borrados va en el ON y no en un WHERE: asi una fuente sin nodos
 # (o con todos borrados) sigue apareciendo, con recordCount = 0.
@@ -63,73 +64,119 @@ def _normalizar(texto):
 
 
 def _detectar_tipo(columnas):
-    """Detecta Cliente, Producto o Pedido usando los encabezados."""
+    """Detecta el tipo principal de las filas, distinguiéndolo de sus claves foráneas."""
     encabezados = {_normalizar(c) for c in columnas}
 
-    patrones = {
-        "Cliente": {
-            "idcliente", "clienteid", "nombrecliente",
-            "razonsocial", "emailcliente", "correocliente",
-            "telefonocliente",
-        },
-        "Producto": {
-            "idproducto", "productoid", "nombreproducto",
-            "codigoproducto", "sku", "precio", "stock",
-        },
-        "Pedido": {
-            "idpedido", "pedidoid", "numeropedido",
-            "codigopedido", "fechapedido", "totalpedido",
-            "estadopedido",
-        },
+    # Un identificador propio de pedido tiene prioridad sobre id_cliente/id_producto,
+    # porque esas columnas suelen ser referencias dentro de una tabla de pedidos.
+    claves_pedido = {
+        "idpedido", "pedidoid", "numeropedido", "codigopedido"
     }
+    if encabezados & claves_pedido:
+        tipo = "Pedido"
+    else:
+        marcadores_cliente = {
+            "idcliente", "clienteid", "codigocliente", "codcliente",
+            "nombrecliente", "razonsocial", "emailcliente", "correocliente",
+        }
+        marcadores_producto = {
+            "idproducto", "productoid", "codigoproducto", "codproducto",
+            "nombreproducto", "sku",
+        }
 
-    puntajes = {
-        tipo: len(encabezados & patron)
-        for tipo, patron in patrones.items()
-    }
+        tiene_cliente = bool(encabezados & marcadores_cliente)
+        tiene_producto = bool(encabezados & marcadores_producto)
 
-    mejor = max(puntajes.values(), default=0)
-    ganadores = [
-        tipo for tipo, puntaje in puntajes.items()
-        if puntaje == mejor and puntaje > 0
-    ]
-
-    if len(ganadores) != 1:
-        raise ValueError(
-            "No se pudo determinar el tipo de entidad con seguridad. "
-            "RevisÃ¡ los encabezados del archivo."
-        )
-
-    tipo = ganadores[0]
+        # Una tabla con ID propio, referencias a cliente y producto y columnas
+        # de fecha/importe suele ser una tabla de pedidos aunque use solo "id".
+        if (
+            "id" in encabezados
+            and bool(encabezados & {"idcliente", "clienteid", "cliente"})
+            and bool(encabezados & {"idproducto", "productoid", "producto", "sku"})
+            and bool(encabezados & {"fecha", "total", "importe", "estado"})
+        ):
+            tipo = "Pedido"
+        # Nombre de la entidad + sus atributos suelen identificar mejor el archivo
+        # que una columna id_cliente/id_producto que podría ser una referencia.
+        elif "nombreproducto" in encabezados or (
+            "sku" in encabezados and ("precio" in encabezados or "stock" in encabezados)
+        ):
+            tipo = "Producto"
+        elif "nombrecliente" in encabezados or "razonsocial" in encabezados:
+            tipo = "Cliente"
+        elif tiene_producto and not tiene_cliente:
+            tipo = "Producto"
+        elif tiene_cliente and not tiene_producto:
+            tipo = "Cliente"
+        else:
+            patrones = {
+                "Cliente": {
+                    "idcliente", "clienteid", "nombrecliente",
+                    "razonsocial", "emailcliente", "correocliente",
+                    "telefonocliente",
+                },
+                "Producto": {
+                    "idproducto", "productoid", "nombreproducto",
+                    "codigoproducto", "sku", "precio", "stock",
+                },
+                "Pedido": {
+                    "numeropedido", "codigopedido", "fechapedido",
+                    "totalpedido", "estadopedido",
+                },
+            }
+            puntajes = {
+                entidad: len(encabezados & patron)
+                for entidad, patron in patrones.items()
+            }
+            mejor = max(puntajes.values(), default=0)
+            ganadores = [
+                entidad for entidad, puntaje in puntajes.items()
+                if puntaje == mejor and puntaje > 0
+            ]
+            if len(ganadores) != 1:
+                raise ValueError(
+                    "No se pudo determinar el tipo de entidad con seguridad. "
+                    "Revisá los encabezados del archivo."
+                )
+            tipo = ganadores[0]
 
     columnas_nombre = {
         "Cliente": [
-            "razonsocial", "nombrecliente", "cliente", "nombre"
+            "razonsocial", "nombrecliente", "cliente", "nombre", "idcliente",
+            "clienteid", "codigocliente", "id"
         ],
         "Producto": [
-            "nombreproducto", "producto", "nombre"
+            "nombreproducto", "producto", "nombre", "sku", "idproducto",
+            "productoid", "codigoproducto", "id"
         ],
         "Pedido": [
             "numeropedido", "codigopedido", "idpedido",
-            "pedido", "nombrepedido"
+            "pedido", "nombrepedido", "id"
         ],
     }
 
     mapa = {_normalizar(c): c for c in columnas}
-
     columna_nombre = next(
         (mapa[c] for c in columnas_nombre[tipo] if c in mapa),
         None,
     )
 
+    # Para pedidos, si solo hay id_pedido y no una columna de nombre,
+    # el identificador funciona como título del nodo.
+    if columna_nombre is None:
+        if tipo == "Pedido":
+            columna_nombre = next(
+                (mapa[c] for c in ("numeropedido", "codigopedido", "idpedido", "pedidoid", "id") if c in mapa),
+                None,
+            )
+
     if columna_nombre is None:
         raise ValueError(
-            f"Se detectÃ³ {tipo}, pero no se encontrÃ³ una columna "
+            f"Se detectó {tipo}, pero no se encontró una columna "
             "que identifique cada registro."
         )
 
     return tipo, columna_nombre
-
 
 @bp.post("/api/sources/import")
 @requiere_login
@@ -202,6 +249,8 @@ def importar_fuente():
     conn = g.conn
     nombre = nombre.strip()
 
+    nodo_ids = []
+
     try:
         with conn:
             existente = conn.execute(
@@ -246,6 +295,7 @@ def importar_fuente():
                 )
 
                 nodo_id = cursor.lastrowid
+                nodo_ids.append(nodo_id)
 
                 registrar(
                     conn,
@@ -261,6 +311,12 @@ def importar_fuente():
                     },
                 )
 
+        # Los nodos ya están guardados. Ahora resolvemos sus referencias contra
+        # las entidades existentes y generamos las relaciones que sean inequívocas.
+        relaciones_creadas = generar_relaciones_automaticas(
+            conn, nodo_ids, g.usuario_id
+        )
+
     except sqlite3.IntegrityError:
         return jsonify({
             "error": "No se pudo importar el archivo por un conflicto de datos"
@@ -272,4 +328,5 @@ def importar_fuente():
         "entityType": tipo_entidad,
         "nameColumn": columna_nombre,
         "imported": len(registros),
+        "relationshipsCreated": relaciones_creadas,
     }), 201

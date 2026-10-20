@@ -1,0 +1,7 @@
+En esta carpeta solo estan los archivos del backend sin modificacion
+estos son para extraer la logica original hasta que el backend de la integracion
+este listo.
+Al momento de realizar los endpoints es necesario ir corrobarando las funciones del archivo original,
+también para ir limpiando codigo,etc.
+
+Si un archivo se modifica a su totalidad, no olvidarse de ingresar el original en esta carpeta. Esto es para ir manteniendo el orden.

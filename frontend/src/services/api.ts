@@ -108,48 +108,31 @@ export const getRelationships = (): Promise<Relationship[]> =>
     requestJson<Relationship[]>("/api/relationships");
 //los dos exports de arriba son para obtener los datos de la API, 
 //por lo que fueron modificados
-export const createEntity = (input: EntityInput): Promise<Entity> => {
-    const entity: Entity = {
-        id: `${idPrefix[input.type]}-${nextId++}`,
-        type: input.type,
-        name: input.name,
-        source: "Manual",
-        data: { creado: new Date().toLocaleDateString("es-AR") },
-    };
-
-    entityStore = [...entityStore, entity];
-
-    relationshipStore = [
-        ...relationshipStore,
-        ...input.connectedIds.map((targetId) => ({
-            sourceId: entity.id,
-            targetId,
-            type: input.relationType,
-        })),
-    ];
-
-    return delay(entity, 200);
-};
+export const createEntity = (input: EntityInput): Promise<Entity> =>
+    requestJson<Entity>("/api/entities", {
+        method: "POST",
+        body: JSON.stringify({
+            type: input.type,
+            name: input.name,
+            source: "Manual",
+            data: input.data || {},
+        }),
+    });
 
 export const updateEntity = (
     id: string,
-    changes: Pick<EntityInput, "name" | "type">,
-): Promise<void> => {
-    entityStore = entityStore.map((entity) =>
-        entity.id === id ? { ...entity, ...changes } : entity,
-    );
+    changes: Pick<EntityInput, "name" | "type"> & { data?: Record<string, string | number> },
+): Promise<Entity> =>
+    requestJson<Entity>(`/api/entities/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+            type: changes.type,
+            name: changes.name,
+            ...(changes.data ? { data: changes.data } : {}),
+        }),
+    });
 
-    return delay(undefined, 200);
-};
-
-// Eliminar una entidad también elimina todas las relaciones en las que participa.
-export const deleteEntity = (id: string): Promise<void> => {
-    entityStore = entityStore.filter((entity) => entity.id !== id);
-
-    relationshipStore = relationshipStore.filter(
-        (relationship) =>
-            relationship.sourceId !== id && relationship.targetId !== id,
-    );
-
-    return delay(undefined, 200);
-};
+export const deleteEntity = (id: string): Promise<void> =>
+    requestJson<void>(`/api/entities/${id}`, {
+        method: "DELETE",
+    });

@@ -7,21 +7,6 @@ import type {
     EntityInput,
 } from "../types";
 
-// Simula el retraso de una solicitud real
-const delay = <T,>(data: T, ms = 350): Promise<T> => new Promise((resolve) => setTimeout(() => resolve(data), ms));
-
-// Copias en memoria de los datos simulados: los cambios persisten hasta que se recarga la página.
-// Cuando el backend esté listo, estas funciones llamarán a la API real en su lugar.
-let entityStore: Entity[] = [...entities];
-let relationshipStore: Relationship[] = [...relationships];
-let nextId = 100;
-
-const idPrefix: Record<EntityType, string> = {
-    Cliente: "cli",
-    Producto: "pro",
-    Pedido: "ped",
-};
-
 
 const requestJson = async <T,>(
     url: string,

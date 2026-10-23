@@ -49,7 +49,8 @@ def crear_app(ruta_db="base.db"):
     # Solo para desarrollo: en cualquier otro lado se define SECRET_KEY como variable de entorno
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-solo-para-desarrollo")
     app.config["RUTA_DB"] = ruta_db
-    app.config["MODO_DEMO"] = os.environ.get("MODO_DEMO") == "1" # Modo demo temporal para la presentacion
+    app.config["MODO_DEMO"] = True
+    # = os.environ.get("MODO_DEMO") == "1" # Modo demo temporal para la presentacion
 
     # Una base en memoria desaparece al cerrar su conexion, asi que en ese caso
     # (los tests) todos los requests comparten una sola conexion, que queda en

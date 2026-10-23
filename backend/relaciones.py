@@ -195,7 +195,16 @@ def _tipo_referenciado(clave):
 
 def _valores_identificadores(fila, tipo):
     """Devuelve valores con los que otras filas pueden referenciar esta entidad."""
-    valores = {_normalizar_valor(fila["titulo"])}
+    prefijos = {"Cliente": "cli-", "Producto": "pro-", "Pedido": "ped-"}
+    prefijo = prefijos.get(tipo, "")
+
+    valores = {
+        _normalizar_valor(fila["titulo"]),
+        _normalizar_valor(fila["id"]),
+    }
+    if prefijo:
+        valores.add(_normalizar_valor(f"{prefijo}{fila['id']}"))
+
     try:
         datos = json.loads(fila["contenido"] or "{}")
     except (TypeError, json.JSONDecodeError):

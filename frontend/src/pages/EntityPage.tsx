@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import {
   Box,
   Button,
@@ -13,12 +13,13 @@ import {
   ListItemText,
 } from "@mui/material";
 
-import { getEntities, getRelationships } from "../services/api";
+import { getEntities, getRelationships, deleteEntity } from "../services/api";
 import { entityTypeColors } from "../theme";
 import type { Entity, Relationship } from "../types";
 
 export default function EntityPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   const [entities, setEntities] = useState<Entity[]>([]);
   const [relationships, setRelationships] = useState<Relationship[]>([]);
@@ -57,6 +58,19 @@ export default function EntityPage() {
       </Box>
     );
   }
+
+  const handleDelete = async () => {
+    const confirmar = window.confirm(`¿Estás seguro de que deseas eliminar "${entity.name}"?`);
+    if (!confirmar) return;
+
+    try {
+      await deleteEntity(entity.id);
+      navigate("/grafo");
+    } catch (error) {
+      console.error("Error al eliminar entidad:", error);
+      alert("No se pudo eliminar la entidad.");
+    }
+  };
 
   const getEntityName = (entityId: string) =>
     entities.find((item) => item.id === entityId)?.name ?? entityId;
@@ -131,9 +145,14 @@ export default function EntityPage() {
           }}
         />
 
-        <Typography variant="h4" sx={{ mb: 2 }}>
-          {entity.name}
-        </Typography>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+          <Typography variant="h4">
+            {entity.name}
+          </Typography>
+          <Button variant="outlined" color="error" onClick={handleDelete}>
+            Eliminar
+          </Button>
+        </Box>
 
         <Card
           variant="outlined"

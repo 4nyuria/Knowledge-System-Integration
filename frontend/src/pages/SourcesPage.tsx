@@ -21,7 +21,7 @@ import AddIcon from "@mui/icons-material/Add";
 import SyncIcon from "@mui/icons-material/Sync";
 import DeleteIcon from "@mui/icons-material/Delete";
 
-import { getSources } from "../services/api";
+import { getSources, deleteSource } from "../services/api";
 import type { Source } from "../types";
 
 export default function SourcesPage() {
@@ -74,12 +74,21 @@ export default function SourcesPage() {
     );
   };
 
-  const handleDeleteSource = (sourceId: number) => {
-    setSources(
-      (currentSources) =>
-        currentSources?.filter((source) => source.id !== sourceId) ?? null,
+const handleDeleteSource = async (sourceId: number) => {
+  try {
+    await deleteSource(sourceId);
+
+    setSources((currentSources) =>
+      currentSources?.filter((source) => source.id !== sourceId) ?? null
     );
-  };
+  } catch (error) {
+    alert(
+      error instanceof Error
+        ? error.message
+        : "No se pudo eliminar la fuente"
+    );
+  }
+};
 
   return (
     <Box>

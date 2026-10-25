@@ -17,7 +17,7 @@ Para proteger una ruta (el decorador va DEBAJO de @bp.route):
 """
 from functools import wraps
 
-from flask import Blueprint, g, jsonify, request, session
+from flask import Blueprint, current_app, g, jsonify, request, session
 
 from usuarios import obtener_usuario, verificar_clave
 
@@ -40,12 +40,15 @@ def _usuario_de_la_sesion():
 
 
 def requiere_login(vista):
-    """Permite el paso directo sin autenticacion para pruebas."""
+    """Permite operaciones anonimas solo cuando la app esta en modo demo."""
     @wraps(vista)
     def envoltura(*args, **kwargs):
-        # Asigna un usuario simulado por defecto para que las rutas no fallen
-        g.usuario_id = 1
-        g.usuario = {"id": 1, "email": "admin@local", "nombre": "Admin", "rol": "admin"}
+        usuario = _usuario_de_la_sesion()
+        if usuario is None and not current_app.config.get("MODO_DEMO"):
+            return jsonify({"error": MENSAJE_NO_AUTENTICADO}), 401
+
+        g.usuario_id = usuario["id"] if usuario is not None else None
+        g.usuario = usuario
         return vista(*args, **kwargs)
 
     return envoltura

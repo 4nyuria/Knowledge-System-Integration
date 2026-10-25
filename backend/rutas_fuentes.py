@@ -330,3 +330,69 @@ def importar_fuente():
         "imported": len(registros),
         "relationshipsCreated": relaciones_creadas,
     }), 201
+# para eliminar una fuente, primero hay que borrar sus nodos y relaciones.
+@bp.delete("/api/sources/<int:source_id>")
+@requiere_login
+def eliminar_fuente(source_id):
+    conn = g.conn
+
+    try:
+        with conn:
+            fuente = conn.execute(
+                "SELECT id FROM fuentes WHERE id = ?",
+                (source_id,),
+            ).fetchone()
+
+            if fuente is None:
+                return jsonify({
+                    "error": "La fuente no existe"
+                }), 404
+
+            # Eliminar las relaciones que tocan nodos de esta fuente.
+            conn.execute(
+                """
+                DELETE FROM relaciones
+                WHERE origen_id IN (
+                    SELECT id FROM nodos WHERE fuente_id = ?
+                )
+                OR destino_id IN (
+                    SELECT id FROM nodos WHERE fuente_id = ?
+                )
+                """,
+                (source_id, source_id),
+            )
+
+            # El historial impide eliminar nodos si no se borra primero.
+            conn.execute(
+                """
+                DELETE FROM historial
+                WHERE nodo_id IN (
+                    SELECT id FROM nodos WHERE fuente_id = ?
+                )
+                """,
+                (source_id,),
+            )
+
+            conn.execute(
+                "DELETE FROM nodos WHERE fuente_id = ?",
+                (source_id,),
+            )
+
+            conn.execute(
+                "DELETE FROM fuentes WHERE id = ?",
+                (source_id,),
+            )
+
+        return jsonify({"deleted": True}), 200
+
+
+    except sqlite3.IntegrityError as exc:
+        print(
+            f"ERROR DE INTEGRIDAD AL IMPORTAR {nombre!r}: "
+            f"{exc!r}",
+            flush=True,
+        )
+        return jsonify({
+            "error": "No se pudo importar el archivo por un conflicto de datos",
+            "detalle": str(exc),
+        }), 409

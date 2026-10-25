@@ -38,6 +38,9 @@ def registrar(conn, nodo_id, usuario_id, accion, antes, despues):
     """
     if accion not in ACCIONES:
         raise ValueError(f"accion invalida: {accion!r} (debe ser una de {ACCIONES})")
+    if usuario_id is None:
+        return None
+
     cur = conn.execute(
         "INSERT INTO historial (usuario_id, nodo_id, accion, antes, despues, fecha)"
         " VALUES (?, ?, ?, ?, ?, ?)",

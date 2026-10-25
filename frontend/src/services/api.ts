@@ -100,7 +100,6 @@ export const createEntity = (input: EntityInput): Promise<Entity> =>
             type: input.type,
             name: input.name,
             source: "Manual",
-            data: input.data || {},
         }),
     });
 
@@ -119,5 +118,9 @@ export const updateEntity = (
 
 export const deleteEntity = (id: string): Promise<void> =>
     requestJson<void>(`/api/entities/${id}`, {
+        method: "DELETE",
+    });
+export const deleteSource = (id: number): Promise<void> =>
+    requestJson<void>(`/api/sources/${id}`, {
         method: "DELETE",
     });

@@ -66,14 +66,14 @@ def test_auth_me_flow(cliente):
     assert res5.status_code == 401
 
 
-def test_post_entities_no_login(cliente):
+def test_post_entities_sin_login_en_modo_demo(cliente):
     response = cliente.post("/api/entities", json={
         "type": "Cliente",
         "name": "X",
         "data": {},
         "source": "Manual"
     })
-    assert response.status_code == 401
+    assert response.status_code == 201
 
 
 def test_get_sources(cliente):

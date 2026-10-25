@@ -311,17 +311,41 @@ def importar_fuente():
                     },
                 )
 
-        # Los nodos ya están guardados. Ahora resolvemos sus referencias contra
-        # las entidades existentes y generamos las relaciones que sean inequívocas.
-        relaciones_creadas = generar_relaciones_automaticas(
-            conn, nodo_ids, g.usuario_id
-        )
+            # Mantener fuente, nodos y relaciones en la misma transacción.
+            relaciones_creadas = generar_relaciones_automaticas(
+                conn, nodo_ids, g.usuario_id
+            )
 
-    except sqlite3.IntegrityError:
+    except sqlite3.IntegrityError as exc:
+        print(
+            f"ERROR DE INTEGRIDAD AL IMPORTAR {nombre!r}: {exc}",
+            flush=True,
+        )
         return jsonify({
-            "error": "No se pudo importar el archivo por un conflicto de datos"
+            "error": "No se pudo importar el archivo por un conflicto de datos",
+            "detalle": str(exc),
         }), 409
 
+    except sqlite3.Error as exc:
+        print(
+            f"ERROR SQLITE AL IMPORTAR {nombre!r}: {exc}",
+            flush=True,
+        )
+        return jsonify({
+            "error": "Error de base de datos al importar",
+            "detalle": str(exc),
+        }), 500
+    
+    except sqlite3.Error as exc:
+        print(
+            f"ERROR SQLITE AL IMPORTAR {nombre!r}: {exc}",
+            flush=True,
+        )
+        return jsonify({
+            "error": "Error de base de datos al importar",
+            "detalle": str(exc),
+        }), 500
+        
     return jsonify({
         "sourceId": fuente_id,
         "source": nombre,
@@ -385,14 +409,13 @@ def eliminar_fuente(source_id):
 
         return jsonify({"deleted": True}), 200
 
-
     except sqlite3.IntegrityError as exc:
         print(
-            f"ERROR DE INTEGRIDAD AL IMPORTAR {nombre!r}: "
-            f"{exc!r}",
+            f"ERROR DE INTEGRIDAD AL ELIMINAR FUENTE "
+            f"{source_id}: {exc!r}",
             flush=True,
         )
         return jsonify({
-            "error": "No se pudo importar el archivo por un conflicto de datos",
+            "error": "No se pudo eliminar la fuente por un conflicto de datos",
             "detalle": str(exc),
         }), 409

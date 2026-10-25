@@ -1,4 +1,3 @@
-import { entities, relationships } from "../mocks/data";
 import type {
     Source,
     Entity,
@@ -6,6 +5,7 @@ import type {
     EntityType,
     EntityInput,
 } from "../types";
+
 
 
 const requestJson = async <T,>(
@@ -26,11 +26,25 @@ const requestJson = async <T,>(
 
         try {
             const errorData = await response.json();
+
             if (errorData.error) {
-                message = errorData.error;
+                message = errorData.detalle
+                    ? `${errorData.error}: ${errorData.detalle}`
+                    : errorData.error;
+            } else if (errorData.message) {
+                message = errorData.message;
             }
+
+            console.error("Detalle de error de la API:", {
+                url,
+                status: response.status,
+                response: errorData,
+            });
         } catch {
-            // La respuesta puede no contener JSON.
+            const text = await response.text().catch(() => "");
+            if (text) {
+                message += ` - ${text}`;
+            }
         }
 
         throw new Error(message);
@@ -42,6 +56,7 @@ const requestJson = async <T,>(
 
     return (await response.json()) as T;
 };
+
 //se cambio el requestJson para relizar mejor el crud.
 export type AuthUser = {
     id: number;
